@@ -1,0 +1,68 @@
+## Commit Summary MCP
+
+Python-based Model Context Protocol (MCP) server that inspects a local Git repository and produces human-friendly summaries of recent work. Two tools are exposed:
+
+1. `get_recent_commits(limit: int = 5)` - list recent commits (hash, author, ISO date, first-line message).
+2. `summarize_diff(commit_hash: str)` - fetch the diff for the given commit, clean the output, send it to a text model, and return a concise summary that focuses on intent, motivation, and risks.
+
+### Requirements
+- Python 3.11+
+- Git CLI on your PATH
+- Ollama 0.12+ running locally (`ollama serve`)
+- The `gpt-oss:20b` model pulled and ready to load (`ollama pull gpt-oss:20b`)
+
+### Installation
+```bash
+# Recommended: create a virtual environment or use uv
+uv sync  # or: python -m venv .venv && .venv\Scripts\activate && pip install -e .
+```
+
+This installs the `commit-summary-mcp` console entry point defined in `pyproject.toml`.
+
+### Running the server
+```bash
+# From the root of the git repository you want to summarize
+uv run commit-summary-mcp
+
+# or explicitly point at another repo
+COMMIT_SUMMARY_REPO=C:\path\to\repo uv run commit-summary-mcp
+```
+
+The process stays attached to STDIN/STDOUT so an MCP-compatible client (e.g., Claude Desktop, Cursor, `npx @modelcontextprotocol/cli`) can launch it as a stdio server.
+
+### Environment variables
+| Variable | Description |
+| --- | --- |
+| `COMMIT_SUMMARY_MODEL` | Optional. Overrides the default `gpt-oss:20b` Ollama model tag. |
+| `COMMIT_SUMMARY_OLLAMA_HOST` | Optional. HTTP base URL for the Ollama server (falls back to `OLLAMA_HOST` or `http://127.0.0.1:11434`). |
+| `COMMIT_SUMMARY_REPO` | Optional. Absolute path to the repo to inspect. Defaults to the first `.git` directory found from the current working directory upward. |
+
+### Tool contract
+#### `get_recent_commits`
+- **Parameters**: `limit` (int, optional, defaults to 5, capped at 20).
+- **Returns**: JSON array of objects with `hash`, `author`, `date`, `message`.
+- **Failure modes**: raises a tool error if Git log fails (e.g., not a repo).
+
+#### `summarize_diff`
+- **Parameters**: `commit_hash` (string, required).
+- **Returns**: JSON object `{ "commit": "<short hash>", "summary": "<1-3 paragraphs>" }`.
+- **Invalid hashes**: returns `{ "error": { "message": "...", "hint": "..." } }`.
+- **Model errors**: converted into the same JSON error shape with hints about making sure Ollama is running and the model tag exists locally.
+
+### Acceptance criteria checklist
+- Launching the server via `uv run commit-summary-mcp` registers both tools (discoverable through any MCP client).
+- Calling `get_recent_commits(3)` yields three commit objects formatted as described above.
+- Calling `summarize_diff("<hash>")` returns a JSON object containing a short hash and a natural-language summary (no raw diff hunks).
+- Passing an empty, missing, or invalid hash returns the structured JSON error with a helpful hint.
+
+### Manual testing tips
+1. Start Ollama: `ollama serve` and ensure `ollama pull gpt-oss:20b` has been run.
+2. Run `uv run commit-summary-mcp` (or `python -m commit_summary_server`) inside a git repo.
+3. From another terminal, use an MCP test client (for example `npx @modelcontextprotocol/cli` in interactive mode) to call the tools.
+4. Pipe a hash from `get_recent_commits` into `summarize_diff` to verify the summarizer path.
+
+### Troubleshooting
+- **No git repo found**: start the server inside your repo or set `COMMIT_SUMMARY_REPO`.
+- **Model errors**: ensure `ollama serve` is running, the target model is pulled, and `COMMIT_SUMMARY_MODEL`/`COMMIT_SUMMARY_OLLAMA_HOST` point to the right values (they can also fall back to `OLLAMA_HOST`).
+- **Binary-heavy commits**: the diff cleaner automatically drops binary blobs and truncates very large diffs; summaries will mention when information was omitted.
+
