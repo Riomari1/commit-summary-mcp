@@ -1,0 +1,3 @@
+[console_scripts]
+commit-summary-mcp = commit_summary_server:main
+commit-summary-mcp-sse = commit_summary_server:main_sse

@@ -248,9 +248,37 @@ async def _run_server() -> None:
     await server.run_stdio_async()
 
 
+def _apply_http_overrides() -> None:
+    """Allow simple host/port overrides for the HTTP/SSE transport."""
+    host = os.getenv("COMMIT_SUMMARY_HTTP_HOST")
+    port = os.getenv("COMMIT_SUMMARY_HTTP_PORT")
+    sse_path = os.getenv("COMMIT_SUMMARY_SSE_PATH")
+
+    if host:
+        server.settings.host = host
+    if port:
+        try:
+            server.settings.port = int(port)
+        except ValueError:
+            raise RuntimeError("COMMIT_SUMMARY_HTTP_PORT must be an integer") from None
+    if sse_path:
+        server.settings.sse_path = sse_path
+
+
+async def _run_sse_server() -> None:
+    """Run the server over HTTP/SSE so it can sit behind an HTTPS tunnel."""
+    _apply_http_overrides()
+    await server.run_sse_async()
+
+
 def main() -> None:
     """Sync-friendly entry point for the console script."""
     asyncio.run(_run_server())
+
+
+def main_sse() -> None:
+    """Console entry point that runs the FastMCP SSE server."""
+    asyncio.run(_run_sse_server())
 
 
 if __name__ == "__main__":

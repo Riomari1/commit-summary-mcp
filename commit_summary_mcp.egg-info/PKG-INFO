@@ -1,3 +1,13 @@
+Metadata-Version: 2.4
+Name: commit-summary-mcp
+Version: 0.1.0
+Summary: Model Context Protocol server that summarizes local git commits.
+Author: Commit Summary MCP
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: mcp<2.0.0,>=1.21.0
+Requires-Dist: httpx<1.0.0,>=0.28.0
+
 ## Commit Summary MCP
 
 Python-based Model Context Protocol (MCP) server that inspects a local Git repository and produces human-friendly summaries of recent work. Two tools are exposed:

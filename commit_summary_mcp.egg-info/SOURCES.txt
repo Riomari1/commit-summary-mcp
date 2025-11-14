@@ -1,0 +1,9 @@
+README.md
+commit_summary_server.py
+pyproject.toml
+commit_summary_mcp.egg-info/PKG-INFO
+commit_summary_mcp.egg-info/SOURCES.txt
+commit_summary_mcp.egg-info/dependency_links.txt
+commit_summary_mcp.egg-info/entry_points.txt
+commit_summary_mcp.egg-info/requires.txt
+commit_summary_mcp.egg-info/top_level.txt
